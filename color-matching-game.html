@@ -7,6 +7,37 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
+        :root {
+            --tube-w: 60px;
+            --tube-h: 200px;
+            --tube-r: 30px;
+            --cap-w: 64px;
+            --area-gap: 16px;
+            --select-lift: -18px;
+        }
+
+        @media (max-width: 420px) {
+            :root {
+                --tube-w: 48px;
+                --tube-h: 160px;
+                --tube-r: 24px;
+                --cap-w: 52px;
+                --area-gap: 10px;
+                --select-lift: -14px;
+            }
+        }
+
+        @media (max-width: 340px) {
+            :root {
+                --tube-w: 42px;
+                --tube-h: 140px;
+                --tube-r: 21px;
+                --cap-w: 46px;
+                --area-gap: 8px;
+                --select-lift: -12px;
+            }
+        }
+
         body {
             background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
             min-height: 100vh;
@@ -17,10 +48,13 @@
             font-family: 'Segoe UI', Tahoma, sans-serif;
             color: white;
             padding: 20px;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+            user-select: none;
         }
 
         h1 {
-            font-size: 2.2rem;
+            font-size: clamp(1.5rem, 6vw, 2.2rem);
             margin-bottom: 6px;
             text-shadow: 0 0 30px rgba(255,255,255,0.4);
             letter-spacing: 2px;
@@ -56,7 +90,7 @@
 
         .game-area {
             display: flex;
-            gap: 16px;
+            gap: var(--area-gap);
             align-items: flex-end;
             margin-bottom: 24px;
             flex-wrap: wrap;
@@ -71,10 +105,12 @@
             transition: transform 0.2s;
         }
 
-        .tube-container:hover { transform: translateY(-4px); }
+        @media (hover: hover) {
+            .tube-container:hover { transform: translateY(-4px); }
+        }
 
         .tube-cap {
-            width: 64px;
+            width: var(--cap-w);
             height: 8px;
             background: rgba(255,255,255,0.25);
             border-radius: 6px 6px 0 0;
@@ -82,17 +118,17 @@
 
         .tube-wrapper {
             position: relative;
-            width: 60px;
-            height: 200px;
+            width: var(--tube-w);
+            height: var(--tube-h);
         }
 
         .tube {
             position: absolute;
             bottom: 0;
-            width: 60px;
-            height: 200px;
+            width: var(--tube-w);
+            height: var(--tube-h);
             border: 3px solid rgba(255,255,255,0.2);
-            border-radius: 0 0 30px 30px;
+            border-radius: 0 0 var(--tube-r) var(--tube-r);
             border-top: none;
             background: rgba(255,255,255,0.04);
             overflow: hidden;
@@ -101,7 +137,7 @@
         }
 
         .tube.selected {
-            transform: translateY(-18px);
+            transform: translateY(var(--select-lift));
             border-color: rgba(255,255,255,0.85);
             box-shadow: 0 0 25px rgba(255,255,255,0.35), 0 0 60px rgba(0,210,255,0.2);
         }
@@ -139,13 +175,15 @@
         }
 
         button {
-            padding: 11px 28px;
+            padding: 13px 28px;
+            min-height: 48px;
             border: none;
             border-radius: 50px;
             cursor: pointer;
             font-size: 0.95rem;
             font-weight: 600;
             transition: all 0.2s;
+            -webkit-tap-highlight-color: transparent;
         }
 
         .btn-reset {
@@ -394,14 +432,14 @@
                 else if (isComplete(tube)) tubeEl.classList.add('completed');
                 else if (selectedIdx !== null && canPour(selectedIdx, idx)) tubeEl.classList.add('pourable');
 
-                // Color blocks (index 0 = bottom)
-                const blockH = 200 / CAPACITY;
+                // Color blocks — use % so they adapt to any CSS tube height
+                const blockH = 100 / CAPACITY;
                 tube.forEach((colorId, bi) => {
                     const block = document.createElement('div');
                     block.className = 'color-block';
                     block.style.cssText = `
-                        height: ${blockH}px;
-                        bottom: ${bi * blockH}px;
+                        height: ${blockH}%;
+                        bottom: ${bi * blockH}%;
                         background: ${hexOf(colorId)};
                         box-shadow: inset 0 3px 10px rgba(255,255,255,0.25),
                                     inset 0 -3px 8px rgba(0,0,0,0.2);
