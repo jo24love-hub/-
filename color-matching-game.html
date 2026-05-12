@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>색 맞추기 게임</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            color: white;
+            padding: 20px;
+        }
+
+        h1 {
+            font-size: 2.2rem;
+            margin-bottom: 6px;
+            text-shadow: 0 0 30px rgba(255,255,255,0.4);
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: rgba(255,255,255,0.6);
+            font-size: 0.95rem;
+            margin-bottom: 24px;
+            text-align: center;
+        }
+
+        .stats {
+            display: flex;
+            gap: 40px;
+            margin-bottom: 28px;
+        }
+
+        .stat { text-align: center; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #00d2ff;
+            text-shadow: 0 0 15px rgba(0,210,255,0.6);
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: rgba(255,255,255,0.5);
+            margin-top: 2px;
+        }
+
+        .game-area {
+            display: flex;
+            gap: 16px;
+            align-items: flex-end;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .tube-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .tube-container:hover { transform: translateY(-4px); }
+
+        .tube-cap {
+            width: 64px;
+            height: 8px;
+            background: rgba(255,255,255,0.25);
+            border-radius: 6px 6px 0 0;
+        }
+
+        .tube-wrapper {
+            position: relative;
+            width: 60px;
+            height: 200px;
+        }
+
+        .tube {
+            position: absolute;
+            bottom: 0;
+            width: 60px;
+            height: 200px;
+            border: 3px solid rgba(255,255,255,0.2);
+            border-radius: 0 0 30px 30px;
+            border-top: none;
+            background: rgba(255,255,255,0.04);
+            overflow: hidden;
+            backdrop-filter: blur(6px);
+            transition: border-color 0.2s, box-shadow 0.2s, transform 0.25s;
+        }
+
+        .tube.selected {
+            transform: translateY(-18px);
+            border-color: rgba(255,255,255,0.85);
+            box-shadow: 0 0 25px rgba(255,255,255,0.35), 0 0 60px rgba(0,210,255,0.2);
+        }
+
+        .tube.completed {
+            border-color: gold;
+            box-shadow: 0 0 20px rgba(255,215,0,0.5);
+        }
+
+        .tube.pourable {
+            border-color: rgba(0,255,150,0.7);
+            box-shadow: 0 0 18px rgba(0,255,150,0.3);
+        }
+
+        .color-block {
+            position: absolute;
+            width: 100%;
+            transition: height 0.3s ease, bottom 0.3s ease;
+        }
+
+        .hint-text {
+            color: rgba(255,255,255,0.45);
+            font-size: 0.82rem;
+            text-align: center;
+            margin-bottom: 18px;
+            max-width: 380px;
+            line-height: 1.6;
+        }
+
+        .buttons {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        button {
+            padding: 11px 28px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .btn-reset {
+            background: rgba(255,255,255,0.12);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.25);
+        }
+
+        .btn-reset:hover {
+            background: rgba(255,255,255,0.22);
+            border-color: rgba(255,255,255,0.5);
+        }
+
+        .btn-new {
+            background: linear-gradient(135deg, #00d2ff, #7b2ff7);
+            color: white;
+            box-shadow: 0 4px 18px rgba(0,210,255,0.3);
+        }
+
+        .btn-new:hover {
+            transform: scale(1.06);
+            box-shadow: 0 6px 24px rgba(0,210,255,0.5);
+        }
+
+        /* Win overlay */
+        .win-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.75);
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+        }
+
+        .win-overlay.show { display: flex; }
+
+        .win-card {
+            background: linear-gradient(135deg, #1a1a3e, #0f3460);
+            border: 2px solid gold;
+            border-radius: 24px;
+            padding: 44px 50px;
+            text-align: center;
+            animation: popIn 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+            box-shadow: 0 0 60px rgba(255,215,0,0.25);
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.4) rotate(-5deg); opacity: 0; }
+            to   { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        .win-emoji { font-size: 4rem; margin-bottom: 16px; }
+
+        .win-title {
+            font-size: 2rem;
+            color: gold;
+            margin-bottom: 8px;
+            text-shadow: 0 0 20px rgba(255,215,0,0.6);
+        }
+
+        .win-detail {
+            color: rgba(255,255,255,0.65);
+            margin-bottom: 26px;
+            font-size: 1rem;
+        }
+
+        /* Confetti particles */
+        .confetti {
+            position: fixed;
+            top: -10px;
+            border-radius: 3px;
+            animation: fall linear forwards;
+            pointer-events: none;
+            z-index: 200;
+        }
+
+        @keyframes fall {
+            to { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <h1>🎨 색 맞추기 게임</h1>
+    <p class="subtitle">시험관을 클릭해 색을 옮기고, 같은 색끼리 모으세요!</p>
+
+    <div class="stats">
+        <div class="stat">
+            <div class="stat-value" id="movesDisplay">0</div>
+            <div class="stat-label">이동 횟수</div>
+        </div>
+        <div class="stat">
+            <div class="stat-value" id="completedDisplay">0 / 4</div>
+            <div class="stat-label">완성된 시험관</div>
+        </div>
+    </div>
+
+    <div class="game-area" id="gameArea"></div>
+
+    <p class="hint-text">
+        첫 번째 시험관을 클릭해 선택하고, 두 번째 시험관을 클릭해 색을 부으세요.<br>
+        위쪽의 색이 같거나, 빈 시험관에만 부을 수 있어요.
+    </p>
+
+    <div class="buttons">
+        <button class="btn-reset" onclick="resetGame()">↩ 다시 시작</button>
+        <button class="btn-new" onclick="newGame()">✨ 새 게임</button>
+    </div>
+
+    <div class="win-overlay" id="winOverlay">
+        <div class="win-card">
+            <div class="win-emoji">🎉</div>
+            <div class="win-title">완성!</div>
+            <div class="win-detail">총 <strong id="finalMoves" style="color:#00d2ff"></strong>번 만에 해결했어요!</div>
+            <button class="btn-new" onclick="newGame(); closeWin();">새 게임 시작하기</button>
+        </div>
+    </div>
+
+    <script>
+        // ── Constants ──────────────────────────────────────────────
+        const CAPACITY = 4;
+        const NUM_COLORS = 4;
+        const NUM_EMPTY = 2;
+
+        const COLOR_PALETTE = [
+            { id: 'red',    hex: '#FF4757' },
+            { id: 'blue',   hex: '#1E90FF' },
+            { id: 'yellow', hex: '#FFD700' },
+            { id: 'green',  hex: '#2ED573' },
+            { id: 'purple', hex: '#A55EEA' },
+            { id: 'orange', hex: '#FF6B35' },
+        ];
+
+        // ── State ──────────────────────────────────────────────────
+        let tubes = [];
+        let savedState = [];
+        let selectedIdx = null;
+        let moves = 0;
+
+        // ── Helpers ────────────────────────────────────────────────
+        const shuffle = arr => {
+            const a = [...arr];
+            for (let i = a.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [a[i], a[j]] = [a[j], a[i]];
+            }
+            return a;
+        };
+
+        const topColor = tube => tube.length ? tube[tube.length - 1] : null;
+
+        const hexOf = id => COLOR_PALETTE.find(c => c.id === id)?.hex ?? '#888';
+
+        const isComplete = tube =>
+            tube.length === CAPACITY && tube.every(c => c === tube[0]);
+
+        const isWon = () => tubes.every(t => t.length === 0 || isComplete(t));
+
+        // ── Game generation ────────────────────────────────────────
+        function buildLevel() {
+            // Easy: 4 colors, each repeated CAPACITY times
+            const chosen = COLOR_PALETTE.slice(0, NUM_COLORS);
+            let pieces = chosen.flatMap(c => Array(CAPACITY).fill(c.id));
+            pieces = shuffle(pieces);
+
+            const filled = Array.from({ length: NUM_COLORS }, (_, i) =>
+                pieces.slice(i * CAPACITY, (i + 1) * CAPACITY)
+            );
+            const empty = Array.from({ length: NUM_EMPTY }, () => []);
+
+            // Avoid accidentally generating solved state
+            const solved = filled.every(isComplete);
+            return solved ? buildLevel() : [...filled, ...empty];
+        }
+
+        // ── Actions ────────────────────────────────────────────────
+        function canPour(from, to) {
+            if (from === to) return false;
+            if (tubes[from].length === 0) return false;
+            if (tubes[to].length >= CAPACITY) return false;
+            if (tubes[to].length === 0) return true;
+            return topColor(tubes[from]) === topColor(tubes[to]);
+        }
+
+        function pour(from, to) {
+            const color = topColor(tubes[from]);
+            while (
+                tubes[from].length > 0 &&
+                topColor(tubes[from]) === color &&
+                tubes[to].length < CAPACITY
+            ) {
+                tubes[to].push(tubes[from].pop());
+            }
+            moves++;
+        }
+
+        // ── Click handler ──────────────────────────────────────────
+        function handleClick(idx) {
+            if (selectedIdx === null) {
+                // Select only non-empty, non-complete tubes
+                if (tubes[idx].length > 0 && !isComplete(tubes[idx])) {
+                    selectedIdx = idx;
+                    render();
+                }
+            } else if (selectedIdx === idx) {
+                selectedIdx = null;
+                render();
+            } else if (canPour(selectedIdx, idx)) {
+                pour(selectedIdx, idx);
+                selectedIdx = null;
+                render();
+                if (isWon()) setTimeout(showWin, 450);
+            } else {
+                // Switch selection to the clicked tube if valid
+                selectedIdx = (tubes[idx].length > 0 && !isComplete(tubes[idx])) ? idx : null;
+                render();
+            }
+        }
+
+        // ── Rendering ──────────────────────────────────────────────
+        function render() {
+            document.getElementById('movesDisplay').textContent = moves;
+            const done = tubes.filter(isComplete).length;
+            document.getElementById('completedDisplay').textContent = `${done} / ${NUM_COLORS}`;
+
+            const area = document.getElementById('gameArea');
+            area.innerHTML = '';
+
+            tubes.forEach((tube, idx) => {
+                const container = document.createElement('div');
+                container.className = 'tube-container';
+                container.onclick = () => handleClick(idx);
+
+                // Cap
+                const cap = document.createElement('div');
+                cap.className = 'tube-cap';
+
+                // Wrapper
+                const wrapper = document.createElement('div');
+                wrapper.className = 'tube-wrapper';
+
+                // Tube
+                const tubeEl = document.createElement('div');
+                tubeEl.className = 'tube';
+                if (idx === selectedIdx) tubeEl.classList.add('selected');
+                else if (isComplete(tube)) tubeEl.classList.add('completed');
+                else if (selectedIdx !== null && canPour(selectedIdx, idx)) tubeEl.classList.add('pourable');
+
+                // Color blocks (index 0 = bottom)
+                const blockH = 200 / CAPACITY;
+                tube.forEach((colorId, bi) => {
+                    const block = document.createElement('div');
+                    block.className = 'color-block';
+                    block.style.cssText = `
+                        height: ${blockH}px;
+                        bottom: ${bi * blockH}px;
+                        background: ${hexOf(colorId)};
+                        box-shadow: inset 0 3px 10px rgba(255,255,255,0.25),
+                                    inset 0 -3px 8px rgba(0,0,0,0.2);
+                    `;
+                    tubeEl.appendChild(block);
+                });
+
+                wrapper.appendChild(tubeEl);
+                container.appendChild(cap);
+                container.appendChild(wrapper);
+                area.appendChild(container);
+            });
+        }
+
+        // ── Win screen ─────────────────────────────────────────────
+        function showWin() {
+            document.getElementById('finalMoves').textContent = moves;
+            document.getElementById('winOverlay').classList.add('show');
+            spawnConfetti();
+        }
+
+        function closeWin() {
+            document.getElementById('winOverlay').classList.remove('show');
+        }
+
+        function spawnConfetti() {
+            const colors = ['#FF4757','#1E90FF','#FFD700','#2ED573','#A55EEA','#FF6B35'];
+            for (let i = 0; i < 80; i++) {
+                const el = document.createElement('div');
+                el.className = 'confetti';
+                const size = 6 + Math.random() * 8;
+                el.style.cssText = `
+                    left: ${Math.random() * 100}vw;
+                    width: ${size}px;
+                    height: ${size * 0.5}px;
+                    background: ${colors[Math.floor(Math.random() * colors.length)]};
+                    animation-duration: ${1.5 + Math.random() * 2}s;
+                    animation-delay: ${Math.random() * 0.8}s;
+                `;
+                document.body.appendChild(el);
+                el.addEventListener('animationend', () => el.remove());
+            }
+        }
+
+        // ── Game lifecycle ─────────────────────────────────────────
+        function newGame() {
+            moves = 0;
+            selectedIdx = null;
+            tubes = buildLevel();
+            savedState = JSON.parse(JSON.stringify(tubes));
+            render();
+        }
+
+        function resetGame() {
+            moves = 0;
+            selectedIdx = null;
+            tubes = JSON.parse(JSON.stringify(savedState));
+            render();
+        }
+
+        // Start!
+        newGame();
+    </script>
+</body>
+</html>
